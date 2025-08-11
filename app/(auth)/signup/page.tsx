@@ -19,7 +19,6 @@ export default function Signup() {
         role: "",
     });
     const [showPassword, setShowPassword] = useState<boolean>(false);
-
     const { token, setToken, setUser, authChecking } = useGlobalState();
     const router = useRouter();
 
@@ -48,7 +47,7 @@ export default function Signup() {
             localStorage.setItem("token", data.token);
 
             toast.success(`Welcome, ${data.user.name}!`);
-            router.push("/");
+
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Signup failed.");
         }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
 import { GlobalStateProvider } from "@/context";
-// import Navbar from "./components/navbar";
+import Navbar from "./components/navbar";
 import { ToastContainer } from 'react-toastify'
 
 
@@ -25,9 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${nunito.variable} antialiased`}>
+        className={`${nunito.variable} antialiased flex justify-start`}>
         <GlobalStateProvider>
-          {/* <Navbar /> */}
+          <Navbar />
           {children}
           <ToastContainer
             position="top-right"

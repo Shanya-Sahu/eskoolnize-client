@@ -15,7 +15,6 @@ export default function Login() {
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [showPassword, setShowPassword] = useState<boolean>(false);
-
     const { token, setToken, setUser, authChecking } = useGlobalState();
     const router = useRouter();
 
@@ -57,7 +56,7 @@ export default function Login() {
             localStorage.setItem("token", data.token);
 
             toast.success(`Welcome back, ${data.user.name}!`);
-            router.push("/");
+
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Login failed.");
         }
