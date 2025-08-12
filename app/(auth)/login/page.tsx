@@ -12,9 +12,12 @@ import { useGlobalState } from "@/context";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Login() {
+    const [role, setRole] = useState<string>("");
     const [email, setEmail] = useState<string>("");
+    const [rollNumber, setRollNumber] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [showPassword, setShowPassword] = useState<boolean>(false);
+
     const { token, setToken, setUser, authChecking } = useGlobalState();
     const router = useRouter();
 
@@ -30,14 +33,25 @@ export default function Login() {
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
-        if (!email.trim() || !password.trim()) {
-            toast.error("Please fill in all fields.");
+        if (!role) {
+            toast.error("Please select your role.");
             return;
         }
 
-        if (!validateEmail(email)) {
-            toast.error("Invalid email address.");
-            return;
+        if (["teacher", "parent", "admin"].includes(role)) {
+            if (!email.trim() || !password.trim()) {
+                toast.error("Please fill in all fields.");
+                return;
+            }
+            if (!validateEmail(email)) {
+                toast.error("Invalid email address.");
+                return;
+            }
+        } else if (role === "student") {
+            if (!rollNumber.trim() || !password.trim()) {
+                toast.error("Please fill in all fields.");
+                return;
+            }
         }
 
         if (password.length < 8) {
@@ -46,9 +60,14 @@ export default function Login() {
         }
 
         try {
+            const payload =
+                role === "student"
+                    ? { role, rollNumber, password }
+                    : { role, email, password };
+
             const { data } = await axios.post(
                 `${process.env.NEXT_PUBLIC_SERVER_API}/api/v1/auth/login`,
-                { email, password }
+                payload
             );
 
             setToken(data.token);
@@ -56,13 +75,15 @@ export default function Login() {
             localStorage.setItem("token", data.token);
 
             toast.success(`Welcome back, ${data.user.name}!`);
-
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Login failed.");
         }
     };
 
-    const isButtonDisabled = !email.trim() || !password.trim();
+    const isButtonDisabled =
+        (role === "student" && (!rollNumber.trim() || !password.trim())) ||
+        (["teacher", "parent", "admin"].includes(role) &&
+            (!email.trim() || !password.trim()));
 
     return (
         <div className="w-full flex items-center justify-between min-h-screen flex-col md:flex-row">
@@ -77,55 +98,104 @@ export default function Login() {
 
                 <div className="w-[80%] mt-[30px]">
                     <form className="space-y-4" onSubmit={handleSubmit}>
+                        {/* Role Selection */}
                         <div>
                             <label className="block mb-1 text-[14px] md:text-[16px]">
-                                Email :
+                                Who are you?
                             </label>
-                            <input
-                                placeholder="Enter your email"
-                                className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white placeholder:text-white text-[14px] md:text-[16px]"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="relative">
-                            <label className="block mb-1 text-[14px] md:text-[16px]">
-                                Password :
-                            </label>
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Enter your password"
-                                className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white placeholder:text-white pr-12 text-[14px] md:text-[16px]"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                autoComplete="current-password"
-                            />
-                            <div
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-5 top-[38px] md:top-[43px] text-white cursor-pointer"
+                            <select
+                                className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white text-[14px] md:text-[16px]"
+                                value={role}
+                                onChange={(e) => {
+                                    setRole(e.target.value);
+                                    setEmail("");
+                                    setRollNumber("");
+                                    setPassword("");
+                                }}
                             >
-                                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                            </div>
+                                <option value="">Select Role</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="parent">Parent</option>
+                                <option value="admin">Admin</option>
+                                <option value="student">Student</option>
+                            </select>
                         </div>
 
-                        <Link
-                            href="/reset-password"
-                            className="flex justify-end cursor-pointer text-[12px] md:text-[14px]"
-                        >
-                            Forgot your password?
-                        </Link>
+                        {/* Conditional Fields */}
+                        {["teacher", "parent", "admin"].includes(role) && (
+                            <div>
+                                <label className="block mb-1 text-[14px] md:text-[16px]">
+                                    Email :
+                                </label>
+                                <input
+                                    placeholder="Enter your email"
+                                    className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white placeholder:text-white text-[14px] md:text-[16px]"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                            </div>
+                        )}
 
-                        <button
-                            type="submit"
-                            disabled={isButtonDisabled}
-                            className={`w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color ${isButtonDisabled
-                                ? "opacity-50 cursor-not-allowed"
-                                : "opacity-100 cursor-pointer"
-                                } text-white font-bold`}
-                        >
-                            Log In
-                        </button>
+                        {role === "student" && (
+                            <div>
+                                <label className="block mb-1 text-[14px] md:text-[16px]">
+                                    Roll Number :
+                                </label>
+                                <input
+                                    placeholder="Enter your roll number"
+                                    className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white placeholder:text-white text-[14px] md:text-[16px]"
+                                    value={rollNumber}
+                                    onChange={(e) => setRollNumber(e.target.value)}
+                                />
+                            </div>
+                        )}
+
+                        {/* Password */}
+                        {role && (
+                            <div className="relative">
+                                <label className="block mb-1 text-[14px] md:text-[16px]">
+                                    Password :
+                                </label>
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Enter your password"
+                                    className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white placeholder:text-white pr-12 text-[14px] md:text-[16px]"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    autoComplete="current-password"
+                                />
+                                <div
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-5 top-[38px] md:top-[43px] text-white cursor-pointer"
+                                >
+                                    {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Forgot password link */}
+                        {role && (
+                            <Link
+                                href="/reset-password"
+                                className="flex justify-end cursor-pointer text-[12px] md:text-[14px]"
+                            >
+                                Forgot your password?
+                            </Link>
+                        )}
+
+                        {/* Login button */}
+                        {role && (
+                            <button
+                                type="submit"
+                                disabled={isButtonDisabled}
+                                className={`w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color ${isButtonDisabled
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "opacity-100 cursor-pointer"
+                                    } text-white font-bold`}
+                            >
+                                Log In
+                            </button>
+                        )}
 
                         <p className="text-center mt-4 text-[14px] md:text-[16px]">
                             Don’t have any account?{" "}
@@ -139,4 +209,3 @@ export default function Login() {
         </div>
     );
 }
-

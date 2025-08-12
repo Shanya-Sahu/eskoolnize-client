@@ -1,5 +1,5 @@
+// Signup.tsx
 "use client";
-
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -17,8 +17,10 @@ export default function Signup() {
         email: "",
         password: "",
         role: "",
+        rollNumber: ""
     });
-    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [roleLocked, setRoleLocked] = useState(false); // NEW: to hide role after selection
     const { token, setToken, setUser, authChecking } = useGlobalState();
     const router = useRouter();
 
@@ -28,11 +30,33 @@ export default function Signup() {
         }
     }, [authChecking, token, router]);
 
+    const handleRoleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setFormData({ ...formData, role: e.target.value });
+        if (e.target.value) setRoleLocked(true);
+    };
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
-        if (Object.values(formData).some((field) => !field.trim())) {
-            toast.error("Please fill in all fields.");
+        if (!formData.role) {
+            toast.error("Please select a role.");
+            return;
+        }
+
+        if (formData.role === "student") {
+            if (!formData.name || !formData.rollNumber || !formData.password) {
+                toast.error("Please fill in all fields.");
+                return;
+            }
+        } else {
+            if (!formData.name || !formData.email || !formData.password) {
+                toast.error("Please fill in all fields.");
+                return;
+            }
+        }
+
+        if (formData.password.length < 8) {
+            toast.error("Password must be at least 8 characters.");
             return;
         }
 
@@ -41,21 +65,14 @@ export default function Signup() {
                 `${process.env.NEXT_PUBLIC_SERVER_API}/api/v1/auth/signup`,
                 formData
             );
-
             setToken(data.token);
             setUser(data.user);
             localStorage.setItem("token", data.token);
-
             toast.success(`Welcome, ${data.user.name}!`);
-
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Signup failed.");
         }
     };
-
-    const isButtonDisabled = Object.values(formData).some(
-        (field) => !field.trim()
-    );
 
     return (
         <div className="w-full flex items-center justify-between min-h-screen flex-col md:flex-row">
@@ -63,109 +80,113 @@ export default function Signup() {
             <div className="w-full md:w-[50%] xl:w-[70%] hidden md:block">
                 <Image src="/main.jpg" alt="welcome" width={1000} height={1000} />
             </div>
-
             <div className="w-full md:w-[50%] xl:w-[30%] min-h-screen bg-primary-color text-white flex justify-center items-center flex-col">
                 <h2 className="text-[22px] md:text-[28px] font-[600]">Create Account</h2>
                 <p className="text-[14px]">Fill in your details below</p>
-
                 <div className="w-[80%] mt-[30px]">
                     <form className="space-y-4" onSubmit={handleSubmit}>
-                        <div>
-                            <label className="block mb-1 text-[14px] md:text-[16px]">
-                                Full Name :
-                            </label>
-                            <input
-                                placeholder="Enter your full name"
-                                className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white placeholder:text-white text-[14px] md:text-[16px]"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, name: e.target.value })
-                                }
-                            />
-                        </div>
+                        {/* Step 1: Role Selection */}
 
                         <div>
-                            <label className="block mb-1 text-[14px] md:text-[16px]">
-                                Email :
-                            </label>
-                            <input
-                                placeholder="Enter your email"
-                                className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white placeholder:text-white text-[14px] md:text-[16px]"
-                                value={formData.email}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, email: e.target.value })
-                                }
-                            />
-                        </div>
-
-                        <div className="relative">
-                            <label className="block mb-1 text-[14px] md:text-[16px]">
-                                Password :
-                            </label>
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Enter your password"
-                                className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white placeholder:text-white pr-12 text-[14px] md:text-[16px]"
-                                value={formData.password}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, password: e.target.value })
-                                }
-                            />
-                            <div
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-5 top-[38px] md:top-[43px] text-white cursor-pointer"
+                            <label className="block mb-1">Who Are You?</label>
+                            <select
+                                value={formData.role}
+                                onChange={handleRoleSelect}
+                                className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white"
                             >
-                                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
-                            </div>
+                                <option value="">Select Role</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="student">Student</option>
+                                <option value="parent">Parent</option>
+                                {/* <option value="admin">Admin</option> */}
+                            </select>
                         </div>
 
-                        <div>
-                            <label className="block mb-1 text-[14px] md:text-[16px]">
-                                Who Are You?
-                            </label>
-                            <div className="relative w-full">
-                                <select
-                                    value={formData.role}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, role: e.target.value })
-                                    }
-                                    className="w-full px-5 py-3 rounded-full bg-semidarkbg-color text-white appearance-none focus:border-none focus:outline-none text-[14px] md:text-[16px]"
-                                >
-                                    <option value="">Select Role</option>
-                                    <option value="Teacher">Teacher</option>
-                                    <option value="Student">Student</option>
-                                    <option value="Parent">Parent</option>
-                                </select>
-                                <div className="pointer-events-none absolute inset-y-0 right-5 flex items-center">
-                                    <svg
-                                        className="w-4 h-4 text-white"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M19 9l-7 7-7-7"
-                                        />
-                                    </svg>
+
+                        {/* Step 2: Show fields only if role selected */}
+                        {roleLocked && (
+                            <>
+                                {/* Name */}
+                                <div>
+                                    <label className="block mb-1">Full Name :</label>
+                                    <input
+                                        placeholder="Enter your full name"
+                                        className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white"
+                                        value={formData.name}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, name: e.target.value })
+                                        }
+                                    />
                                 </div>
-                            </div>
-                        </div>
 
-                        <button
-                            type="submit"
-                            disabled={isButtonDisabled}
-                            className={`w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color ${isButtonDisabled
-                                ? "opacity-50 cursor-not-allowed"
-                                : "opacity-100 cursor-pointer"
-                                } text-white font-bold`}
-                        >
-                            Sign Up
-                        </button>
+                                {/* Email for Non-Students */}
+                                {formData.role !== "student" && (
+                                    <div>
+                                        <label className="block mb-1">Email :</label>
+                                        <input
+                                            placeholder="Enter your email"
+                                            className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white"
+                                            value={formData.email}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, email: e.target.value })
+                                            }
+                                        />
+                                    </div>
+                                )}
 
-                        <p className="text-center mt-4 text-[14px] md:text-[16px]">
+                                {/* Roll Number for Students */}
+                                {formData.role === "student" && (
+                                    <div>
+                                        <label className="block mb-1">Roll Number :</label>
+                                        <input
+                                            placeholder="Enter your roll number"
+                                            className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white"
+                                            value={formData.rollNumber}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, rollNumber: e.target.value })
+                                            }
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Password */}
+                                <div className="relative">
+                                    <label className="block mb-1">Password :</label>
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="Enter your password"
+                                        className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white pr-12"
+                                        value={formData.password}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, password: e.target.value })
+                                        }
+                                    />
+                                    <div
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-5 top-[38px] cursor-pointer"
+                                    >
+                                        {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                                    </div>
+                                </div>
+
+                                {/* Submit */}
+                                <button
+                                    type="submit"
+                                    className="w-full px-5 py-3 rounded-full focus:outline-none bg-semidarkbg-color text-white font-bold"
+                                >
+                                    Sign Up
+                                </button>
+
+
+
+
+                            </>
+
+
+                        )}
+
+                        {/* Link */}
+                        <p className="text-center mt-4">
                             Already have an account?{" "}
                             <Link href="/login" className="font-bold">
                                 Log In
