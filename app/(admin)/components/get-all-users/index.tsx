@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { FaCheckCircle } from "react-icons/fa";
 
@@ -44,16 +44,22 @@ export default function Users() {
                 return;
             }
 
-            const res = await axios.get<User[]>(`${API_BASE}/api/v1/admin/users`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+            // const res = await axios.get<User[]>(`${API_BASE}/api/v1/admin/users`, {
+            //     headers: {
+            //         Authorization: `Bearer ${token}`,
+            //     },
+            // });
+            const res = await axios.get(`${API_BASE}/api/v1/admin/users`, {
+                headers: { Authorization: `Bearer ${token}` },
             });
             setUsers(res.data);
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to load users.");
-        } finally {
-            setLoading(false);
+        } catch (err) {
+            const error = err as AxiosError<{ message: string }>;
+            if (error.response) {
+                console.error(error.response.data.message);
+            } else {
+                console.error("Something went wrong");
+            }
         }
     };
 
@@ -91,10 +97,13 @@ export default function Users() {
                         : user
                 )
             );
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to verify user.");
-        } finally {
-            setVerifyingUserId(null);
+        } catch (err) {
+            const error = err as AxiosError<{ message: string }>;
+            if (error.response) {
+                console.error(error.response.data.message);
+            } else {
+                console.error("Something went wrong");
+            }
         }
     };
 

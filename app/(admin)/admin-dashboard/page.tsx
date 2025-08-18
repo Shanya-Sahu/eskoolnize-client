@@ -1,13 +1,3 @@
-// import Users from "../components/get-all-users";
-
-// export default function AdminDashboard() {
-//     return (
-//         <div className="w-full py-10">
-//             <h2 className="text-4xl text-center font-bold"> AdminDashboard</h2>
-//             <Users />
-//         </div>
-//     )
-// }
 "use client";
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
